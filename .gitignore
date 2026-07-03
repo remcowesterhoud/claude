@@ -1,0 +1,30 @@
+# Session data & transcripts — machine-specific, may contain sensitive content
+projects/
+sessions/
+session-env/
+tasks/
+todos/
+history.jsonl
+file-history/
+shell-snapshots/
+paste-cache/
+backups/
+telemetry/
+
+# Caches & reinstallable state
+cache/
+plugins/
+ide/
+stats-cache.json
+mcp-needs-auth-cache.json
+policy-limits.json
+remote-settings.json
+.last-cleanup
+.DS_Store
+
+# Local-only settings & backups
+settings.local.json
+*.bak
+
+# Credentials — never commit, even if a future version writes them to disk
+.credentials.json

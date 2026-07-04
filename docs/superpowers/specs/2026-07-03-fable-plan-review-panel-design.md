@@ -32,7 +32,7 @@ Rework the planner/executor workflow so that:
 
 ### Reviewer agents
 
-**Files:** five new agent definitions in `~/.claude/agents/`. Each is a read-only reviewer: it must not mutate the working tree, index, HEAD, or branch state. Each receives a diff package file path plus the plan/spec path in its dispatch prompt, and reports findings as Critical / Important / Minor with `file:line` references, plus a verdict (ready / with fixes / not ready). Structure borrows from superpowers' `code-reviewer.md` template, narrowed to one angle each.
+**Files:** five new agent definitions in `~/.claude/agents/`. Each is a read-only reviewer: it must not mutate the working tree, index, HEAD, or branch state. Each receives a diff package file path plus the plan/spec path in its dispatch prompt, and reports findings as Critical / Important / Minor with `file:line` references, plus a verdict (ready / with fixes / not ready). **Amended design:** agent files carry only their YAML frontmatter (name, description, model) and their angle-specific section. The shared Inputs, Read-only review, and Output format prose lives in the `## Shared dispatch block` of `skills/review-panel/SKILL.md` and is appended verbatim to every reviewer dispatch prompt; agent files do not duplicate it.
 
 | File | Angle | Model (frontmatter) |
 |---|---|---|
@@ -61,9 +61,9 @@ Rework the planner/executor workflow so that:
 
 **Goal:** make the personal Claude configuration reusable in a future dev environment via `git clone`.
 
-- `git init` in `~/.claude` with a `.gitignore` that versions only portable configuration and excludes everything session-, cache-, or machine-specific.
-- **Versioned:** `CLAUDE.md`, `RTK.md`, `user_*.md`, `agents/`, `skills/`, `docs/`, `plans/`, `scripts/`, `settings.json`.
-- **Ignored:** `projects/` (transcripts + memory), `plugins/` (reinstallable cache), `history.jsonl`, `file-history/`, `shell-snapshots/`, `session-env/`, `sessions/`, `tasks/`, `telemetry/`, `cache/`, `paste-cache/`, `backups/`, `ide/`, `settings.local.json`, `*.bak`, `stats-cache.json`, `mcp-needs-auth-cache.json`, `policy-limits.json`, `remote-settings.json`, `.last-cleanup`, `.DS_Store`.
+- `git init` in `~/.claude` with a `.gitignore` (allowlist-style: `*` ignores everything by default, selective `!` patterns un-ignore the portable config set) that versions only portable configuration and excludes everything session-, cache-, or machine-specific. New files or directories Claude Code invents are ignored by default without requiring manual `.gitignore` updates.
+- **Versioned:** `CLAUDE.md`, `RTK.md`, `user_*.md`, `agents/`, `skills/`, `docs/`, `scripts/`, `settings.json`.
+- **Ignored:** `plans/` (project-specific ledgers, not portable), `projects/` (transcripts + memory), `plugins/` (reinstallable cache), `history.jsonl`, `file-history/`, `shell-snapshots/`, `session-env/`, `sessions/`, `tasks/`, `telemetry/`, `cache/`, `paste-cache/`, `backups/`, `ide/`, `settings.local.json`, `*.bak`, `stats-cache.json`, `mcp-needs-auth-cache.json`, `policy-limits.json`, `remote-settings.json`, `.last-cleanup`, `.DS_Store`.
 - Verified at design time: no credentials exist on disk in `~/.claude` (macOS stores them in the Keychain) and `settings.json` contains no secrets. The `.gitignore` still defends against future additions (`.credentials.json` explicitly ignored).
 - Initial commit contains the current config plus everything produced by Parts 1–3.
 - Remote setup (e.g. a **private** GitHub repo) is left to the user; the design only guarantees the local repo is safe to push.

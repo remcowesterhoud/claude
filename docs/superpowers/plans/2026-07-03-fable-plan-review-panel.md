@@ -169,7 +169,7 @@ If the implementer reports a deviation or unexpected blocker, you (the planner) 
 grep -c "Opus" /Users/remco.westerhoud/.claude/user_workflow.md
 ```
 
-Expected: `0` (exit code 1). Also `grep -c "review-panel" user_workflow.md` → `1` or more.
+Expected: `0` (exit code 1). Also `grep -c "review-panel" user_workflow.md` → `1` or more. Also `grep -c "/model fable" user_workflow.md` → `1` or more (verifies the model guardrail). Also `grep -c "Fable plans, Sonnet executes" user_workflow.md` → `1` (verifies the spec's primary success criterion).
 
 - [ ] **Step 3: Commit**
 
@@ -434,6 +434,14 @@ Expected exactly:
 /Users/remco.westerhoud/.claude/agents/reviewer-tests.md:model: sonnet
 ```
 
+Also verify name frontmatter:
+
+```bash
+grep -H "^name:" /Users/remco.westerhoud/.claude/agents/reviewer-*.md
+```
+
+Expected exactly: `reviewer-compat`, `reviewer-correctness`, `reviewer-security`, `reviewer-simplify`, `reviewer-tests`.
+
 - [ ] **Step 7: Commit**
 
 ```bash
@@ -540,7 +548,7 @@ Do not paste the diff or session history into prompts. Do not tell any reviewer 
 grep -c "reviewer-" /Users/remco.westerhoud/.claude/skills/review-panel/SKILL.md
 ```
 
-Expected: 10 or more (table + dispatch references). Also verify frontmatter: `head -4 skills/review-panel/SKILL.md` shows `name: review-panel`.
+Expected: at least 6 (5 table rows + compat-skip reference). Also verify frontmatter: `head -4 skills/review-panel/SKILL.md` shows `name: review-panel`.
 
 - [ ] **Step 3: Commit**
 
@@ -598,3 +606,15 @@ EOF
 ```
 
 (`|| true` because there may be nothing left to commit.)
+
+---
+
+## Post-review amendments (2026-07-03)
+
+Changes applied during the panel fix round after original implementation:
+
+- **Packager path resolution:** replaced the `*/` glob in Step 2's packager invocation with `ls … | sort -V | tail -1` to resolve the single latest cached version, avoiding ambiguity when multiple plugin versions exist.
+- **Base-range guards:** Step 1 now guards against an empty MERGE_BASE (no `main` branch) and a zero-commit range (work committed directly on the base branch), stopping to ask the user rather than dispatching against an empty diff; also documents the empty-tree base for root reviews.
+- **Agent de-duplication into shared dispatch block:** the three character-identical sections (Inputs, Read-only review, Output format) were moved out of all five agent files and into a `## Shared dispatch block` in SKILL.md, with the Inputs wording generalized to "a question in your angle". Agent files now carry only frontmatter and their own angle section.
+- **gitignore switched to allowlist with plans/ untracked:** `.gitignore` rewritten to an allowlist (`*` + selective `!` patterns) so future Claude Code artifacts are ignored by default; `plans/` removed from the versioned set (project-specific, not portable) and untracked via `git rm -r --cached`.
+- **Fix-loop hardening:** Step 2 now guards that the package file is non-empty before dispatching; Step 5 skips the fix round when there are no Critical/Important findings; Step 6 escalates to the user after 3 fix rounds without resolution; Step 3 notes that reviewer model pins in agent frontmatter must never be overridden.

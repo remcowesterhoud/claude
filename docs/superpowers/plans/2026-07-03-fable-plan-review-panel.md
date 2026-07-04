@@ -34,6 +34,8 @@
 
 Create `/Users/remco.westerhoud/.claude/.gitignore` with exactly:
 
+> **Amended:** this original denylist was replaced by an allowlist-style .gitignore in the post-review fix round — see the deployed `/Users/remco.westerhoud/.claude/.gitignore` for the current canonical content. Do not re-create the block below.
+
 ```gitignore
 # Session data & transcripts — machine-specific, may contain sensitive content
 projects/
@@ -81,7 +83,7 @@ Expected: `Initialized empty Git repository in /Users/remco.westerhoud/.claude/.
 git -C /Users/remco.westerhoud/.claude status --porcelain
 ```
 
-Expected output lists ONLY (order may vary): `.gitignore`, `CLAUDE.md`, `RTK.md`, `agents/`, `docs/`, `plans/`, `scripts/`, `settings.json`, `skills/`, `user_maven_output.md`, `user_pr_writing_style.md`, `user_role.md`, `user_workflow.md`. If `projects/`, `plugins/`, `history.jsonl`, or any cache file appears, fix `.gitignore` before proceeding.
+Expected output lists ONLY (order may vary): `.gitignore`, `CLAUDE.md`, `RTK.md`, `agents/`, `docs/`, `scripts/`, `settings.json`, `skills/`, `user_maven_output.md`, `user_pr_writing_style.md`, `user_role.md`, `user_workflow.md` (Amended: `plans/` is no longer tracked). If `projects/`, `plugins/`, `history.jsonl`, or any cache file appears, fix `.gitignore` before proceeding.
 
 Then verify future session noise stays invisible:
 
@@ -198,6 +200,8 @@ EOF
 - Produces: agent type names `reviewer-correctness`, `reviewer-compat`, `reviewer-security`, `reviewer-simplify`, `reviewer-tests` — dispatched by the `review-panel` skill (Task 4). Each expects its dispatch prompt to contain: (1) a diff package file path, (2) the plan/spec path, (3) a one-line summary of what was built.
 
 All five files share the same body structure; only frontmatter and the "Your angle" section differ. Write each file exactly as shown.
+
+> **Amended:** the full agent bodies below were slimmed in the post-review fix round — deployed agent files contain only frontmatter, the opening panel paragraph, and the `## Your angle` section. The shared Inputs / Read-only review / Output format prose now lives in the `## Shared dispatch block` of `skills/review-panel/SKILL.md`. When re-creating an agent, use a deployed reviewer file as the template, not the bodies below.
 
 - [ ] **Step 1: Write `agents/reviewer-correctness.md`**
 
@@ -574,7 +578,7 @@ EOF
 git -C /Users/remco.westerhoud/.claude ls-files | cut -d/ -f1 | sort -u
 ```
 
-Expected: `.gitignore`, `CLAUDE.md`, `RTK.md`, `agents`, `docs`, `plans`, `scripts`, `settings.json`, `skills`, `user_maven_output.md`, `user_pr_writing_style.md`, `user_role.md`, `user_workflow.md` — nothing else.
+Expected: `.gitignore`, `CLAUDE.md`, `RTK.md`, `agents`, `docs`, `scripts`, `settings.json`, `skills`, `user_maven_output.md`, `user_pr_writing_style.md`, `user_role.md`, `user_workflow.md` — nothing else (Amended: `plans` is no longer tracked).
 
 - [ ] **Step 2: Verify clean status**
 
@@ -618,3 +622,4 @@ Changes applied during the panel fix round after original implementation:
 - **Agent de-duplication into shared dispatch block:** the three character-identical sections (Inputs, Read-only review, Output format) were moved out of all five agent files and into a `## Shared dispatch block` in SKILL.md, with the Inputs wording generalized to "a question in your angle". Agent files now carry only frontmatter and their own angle section.
 - **gitignore switched to allowlist with plans/ untracked:** `.gitignore` rewritten to an allowlist (`*` + selective `!` patterns) so future Claude Code artifacts are ignored by default; `plans/` removed from the versioned set (project-specific, not portable) and untracked via `git rm -r --cached`.
 - **Fix-loop hardening:** Step 2 now guards that the package file is non-empty before dispatching; Step 5 skips the fix round when there are no Critical/Important findings; Step 6 escalates to the user after 3 fix rounds without resolution; Step 3 notes that reviewer model pins in agent frontmatter must never be overridden.
+- **Task 1/3/5 bodies carry amendment notes** — the deployed .gitignore and slimmed agent files are canonical; the original templates in this plan are historical.

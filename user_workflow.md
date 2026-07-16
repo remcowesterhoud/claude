@@ -32,6 +32,10 @@ When delegating, give the `implementer` agent the full plan as its prompt — fi
 
 **Suppress advisor in implementers:** Include this instruction in every implementer dispatch: "Do not call advisor(). Each advisor call replays the full conversation history and is expensive. If the task is unclear, report NEEDS_CONTEXT instead — the planner will clarify and re-dispatch."
 
+**Filter Maven output in dispatch:** Include this instruction in every implementer dispatch: "All `./mvnw` invocations must use `-q --batch-mode`. For test runs, pipe through `grep -E 'BUILD|ERROR|FAIL|Tests run'` or use `tail -n 30` to keep only the summary in context. Never dump raw Maven output."
+
+**grep -l before content grep:** Include this instruction in every implementer dispatch: "When locating which file contains a symbol or pattern, use `grep -rl pattern dir` (filenames only) before using content grep or Read. This keeps file lists in context instead of matching lines."
+
 If the implementer reports a deviation or unexpected blocker, you (the planner) handle it: triage the issue, decide whether to re-plan, then either patch the plan and re-dispatch or hand the decision back to me. Do not start editing files yourself to "rescue" the implementation.
 
 ## Model assignments during execution
@@ -40,3 +44,11 @@ If the implementer reports a deviation or unexpected blocker, you (the planner) 
 - **Exception — mechanical tasks:** if the approved plan is clearly mechanical, dispatch `implementer-mechanical` (Haiku) instead. A plan is mechanical when it consists entirely of: renaming (variables, methods, classes, constants), adding/removing imports, adding a plain field or getter/setter, adding a new method that contains no logic (e.g. a getter that returns a field, a delegating override), adding an enum constant, adding a record component, updating config values, fixing code formatting or Javadoc, or adding simple boilerplate with no logic. Default to Sonnet (`implementer`) whenever the plan touches engine logic, processors, event appliers, state, concurrency, authorization, protocol/schema, or test assertions — even if the change looks small.
 - Per-task spec/quality reviewers in subagent-driven-development run on Sonnet.
 - The **final whole-branch review** is not a single reviewer on the most capable model: use the `review-panel` skill instead (parallel multi-angle, multi-model panel). This supersedes the final code-reviewer dispatch in superpowers `subagent-driven-development` / `requesting-code-review`.
+
+## PR and review writing
+
+`user_pr_writing_style.md` is **not** loaded by default (it would otherwise inflate every subagent's context). Read it explicitly before drafting a PR description, a PR review comment, or a standup PR summary:
+
+```
+Read: ~/.claude/user_pr_writing_style.md
+```

@@ -11,15 +11,19 @@ Run the final whole-branch review as a parallel panel of angle-specific reviewer
 
 ## The panel
 
-| Agent type | Angle | Model |
-|---|---|---|
-| `reviewer-correctness` | Bugs, logic errors, edge cases, concurrency | fable |
-| `reviewer-compat` | Persisted state, record/protocol schema, public APIs, replay | fable |
-| `reviewer-security` | Injection, authz, secrets, deserialization, input validation | opus |
-| `reviewer-simplify` | Over-engineering, duplication, missed utilities | sonnet |
-| `reviewer-tests` | Tests verify real behavior, coverage, hygiene | sonnet |
+| Agent type | Angle | Model | When |
+|---|---|---|---|
+| `reviewer-correctness` | Bugs, logic errors, edge cases, concurrency | fable | always |
+| `reviewer-compat` | Persisted state, record/protocol schema, public APIs, replay | fable | always (see skip rule) |
+| `reviewer-security` | Injection, authz, secrets, deserialization, input validation | opus | when diff touches auth, input handling, or security paths |
+
+Per-task reviews in `subagent-driven-development` already cover simplification and test hygiene — do not dispatch `reviewer-simplify` or `reviewer-tests`.
 
 **Compat skip rule:** if the diff clearly cannot touch persisted state, record/protocol schemas, public APIs, or replay behavior (e.g. docs-only, frontend-only, build tooling), skip `reviewer-compat` — and state the skip explicitly in the synthesis. Never skip silently.
+
+**Security skip rule:** if the diff clearly cannot touch auth, authorization checks, input validation, secrets handling, or deserialization, skip `reviewer-security` — state the skip explicitly. When in doubt, keep it.
+
+**One-run rule:** run the panel exactly once. After presenting the synthesis, stop — do not run the panel again to verify fixes. If fixes are needed, dispatch a targeted implementer, then let the normal CI and per-task review process validate the result. A second panel run on a near-identical diff is not worth the cost.
 
 ## Steps
 
@@ -35,7 +39,7 @@ If `main` is not the base branch (repo uses `master`, stacked branches, or the b
 
 To review an entire repo from its root (new repo, no base branch), use the empty tree as base: `MERGE_BASE=$(git hash-object -t tree /dev/null)`.
 
-**2. Build one diff package file.**
+**2. Build one diff package and read its content.**
 
 Prefer superpowers' packager when the plugin is installed; resolve the single latest version rather than globbing:
 
@@ -53,15 +57,17 @@ PKG=$SCRATCHPAD/review-package-$(git rev-parse --short HEAD).txt
 
 The package file must exist and be non-empty (`[ -s "$PKG" ]`) — never dispatch reviewers otherwise.
 
+**Read the package file content into your context now** (before dispatching). Use the Read tool with `limit` and `offset` if the file is large — read it in full. You will embed this content directly in each reviewer prompt so reviewers do not need to read the file themselves.
+
 **3. Dispatch the panel in parallel** — one message, one Agent call per reviewer, `subagent_type` set to the agent type name. Each dispatch prompt contains:
 
 - One-line summary of what was built
 - The plan/spec file path ("this is what the work was supposed to do")
-- The package path ("read this first — commit list, stat, and full diff")
 - The base and head SHAs
-- The shared dispatch block below (inputs, read-only contract, output format); never override the models pinned in the agent frontmatter
+- The full diff package content, embedded inline in a fenced code block
+- The shared dispatch block below (read-only contract, output format); never override the models pinned in the agent frontmatter
 
-Do not paste the diff or session history into prompts. Do not tell any reviewer what not to flag or pre-rate severities.
+Do not tell any reviewer what not to flag or pre-rate severities. Do not include your session history in prompts.
 
 **4. Synthesize.** When all reviewers return:
 
@@ -70,9 +76,7 @@ Do not paste the diff or session history into prompts. Do not tell any reviewer 
 - Report each reviewer's verdict; report any skipped or failed reviewer as **"angle not covered"** — a reviewer that returned nothing is never silently dropped
 - Present the synthesis to the user
 
-**5. Fix round.** If there are any Critical or Important findings, dispatch ONE `implementer` (Sonnet) with the complete list of Critical and Important findings — not one fixer per finding. If there are none, skip the fix round. The dispatch names the covering tests to re-run (or, when no test suite covers the change, the verification commands to re-run). Minor findings are listed for the user to decide; do not auto-fix them.
-
-**6. Targeted re-review.** After the fix commit, re-dispatch only the reviewers whose Critical/Important findings were addressed, with the updated package (same MERGE_BASE, new HEAD). Repeat the fix/re-review loop until those reviewers report ready, then present the final state to the user. If a reviewer still reports not ready after 3 fix rounds, stop and hand the remaining findings back to the user.
+**5. Present findings and stop.** After presenting the synthesis, stop. Do not dispatch an implementer, make any code changes, or re-run the panel. The user decides what to fix and when. The panel runs once per branch — never as a verification pass after fixes.
 
 ## Shared dispatch block
 
@@ -81,7 +85,7 @@ Append this block verbatim to every reviewer dispatch prompt:
 ```
 ## Inputs
 
-Your dispatch prompt names a diff package file (commit list, stat, and full diff with context) and the plan or spec the work implements. Read the package first. Read surrounding source files when the diff alone cannot answer a question in your angle — follow the code, don't guess.
+The diff package (commit list, stat, and full diff with context) is embedded directly above. The plan or spec file path is also provided — read it to understand what the work was supposed to do. When the diff alone cannot answer a question in your angle, read surrounding source files — follow the code, don't guess. For source files over ~300 lines, use the Read tool with `limit` and `offset` to read only the sections relevant to the diff hunks rather than the full file.
 
 ## Read-only review
 

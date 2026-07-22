@@ -21,45 +21,26 @@ Pre-review a single PR before the engineer opens it. Two layered phases: fast tr
 
 ## Phase 1 — Fast triage
 
-Dispatch **one** agent via the Agent tool with `subagent_type: "general-purpose"` and `model: "sonnet"`.
+Run this directly (no subagent needed):
 
-Before dispatching, read the full content of `~/.claude/skills/review-triage/SKILL.md` and paste it verbatim into the agent's prompt (in place of the `<<<PASTE ...>>>` marker below). This embeds the triage framework so the agent runs it directly rather than invoking a separate skill.
+```bash
+gh pr view <PR> --json number,title,author,body,files,additions,deletions
+```
 
-The agent prompt is:
+Apply the `review-triage` skill inline. Do NOT read the diff — only use the metadata and changed-file list from the JSON above. Pay special attention to Zeebe-specific danger zones — event appliers, state classes, intent enums, persisted record types, and replay-sensitive paths — and to AI-generated-code red flags (large test rewrites, removed tests, duplicate helpers, missing intent capture).
 
-> You are triaging a GitHub PR to decide how deeply it needs review. Do NOT read the diff — only read metadata and the changed-file list.
->
-> Run this to gather the PR's title, description, author, and changed files (no diff content):
->
-> ```bash
-> gh pr view <PR> --json number,title,author,body,files,additions,deletions
-> ```
->
-> (Substitute `<PR>` with the number or URL provided.)
->
-> Apply the following review-triage framework to classify the PR. Pay special attention to Zeebe-specific danger zones — event appliers, state classes, intent enums, persisted record types, and replay-sensitive paths — and to AI-generated-code red flags (large test rewrites, removed tests, duplicate helpers, missing intent capture).
->
-> ```
-> <<<PASTE FULL CONTENT OF ~/.claude/skills/review-triage/SKILL.md HERE>>>
-> ```
->
-> Print ONLY this structured summary to your final output, filling every field. Match this format exactly:
->
-> ```
-> PR #XXXXX — <title>
-> Risk: HIGH | Gate: human-in-loop
-> Author: <author> | <module(s)> | +NNN −NNN
->
-> Red flags: <list or "none">
-> Focus: <1-2 sentences on where to concentrate review effort>
-> ```
->
-> - `Risk` is one of Low / Medium / High per the framework.
-> - `Gate` is `human-on-loop` (spot-check) or `human-in-loop` (review every merge).
-> - `<module(s)>` is the module(s) touched, inferred from the changed-file paths (e.g. `zeebe/engine`, `operate`).
-> - `+NNN −NNN` are the additions/deletions from the JSON.
+Invoke the skill and print its **full output** to the terminal without summarizing or truncating it.
 
-Print the agent's triage summary to the terminal verbatim.
+Then, using only the PR metadata and changed-file list already fetched (no additional commands), print a **Panel reviewer recommendation** section:
+
+```
+=== Panel reviewer recommendation ===
+✓  reviewer-correctness  — <one-line reason it applies, or "general correctness">
+✓  reviewer-compat       — <one-line reason it applies, e.g. "touches persisted state / record types">
+✓  reviewer-security     — <one-line reason it applies, e.g. "touches auth / input validation">
+```
+
+Mark any reviewer with `✗  SKIP` (instead of `✓`) if it clearly does not apply, and give a one-line reason (e.g. "docs-only, no persisted state"). Never skip silently. Apply the same compat skip rule as the review-panel skill: skip `reviewer-compat` only when the diff clearly cannot touch persisted state, record/protocol schemas, public APIs, or replay behavior. Skip `reviewer-security` only when the diff clearly cannot touch auth, authorization, input validation, secrets, or deserialization. When in doubt, keep the reviewer.
 
 Then STOP and ask the user, waiting for a reply before doing anything else:
 

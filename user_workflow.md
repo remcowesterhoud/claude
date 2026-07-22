@@ -26,7 +26,14 @@ What does *not* count, so stay in planning/exploration mode:
 
 When delegating, give the `implementer` agent the full plan as its prompt — file paths, what to change, what to verify. The implementer is on Sonnet and starts cold; it has none of our conversation context. Include enough that it can execute without coming back to ask. Reference specific files and line numbers where it helps.
 
-**Pre-explore before dispatching:** If the plan lacks exact file paths and line numbers, run an `Explore` subagent first to locate the relevant code (file paths, line ranges, method signatures, key snippets). Embed those findings directly in the implementer prompt. An implementer that starts with zero unknowns skips its entire exploration phase — the biggest single source of unnecessary input tokens.
+**Pre-explore before dispatching — mandatory.** Before writing the implementer prompt, verify the prompt can answer all of these without the implementer opening a single file:
+
+- Exact file path (not directory-level) for every file to be changed
+- Line range of the class/method being modified
+- Signature of any method being added or changed
+- The key existing code pattern the implementer should match (e.g. how a sibling processor is structured)
+
+If any of these is missing, run an `Explore` subagent first. Do not rationalize "close enough" — a plan with approximate locations forces the implementer into an exploration phase that costs more than the Explore call would have. Embed the Explore findings verbatim in the implementer prompt.
 
 **Scope Read calls in dispatch:** Include this instruction in every implementer dispatch: "For files over ~300 lines, use the `Read` tool with `limit` and `offset` params to read only the relevant section rather than the full file. The Read tool is not filtered by RTK — every line it returns costs tokens."
 

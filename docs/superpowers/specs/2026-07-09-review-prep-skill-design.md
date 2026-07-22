@@ -9,7 +9,7 @@ AI agents produce code faster than a senior engineer can manually review using t
 
 ## Goal
 
-A manual skill `/review-prep <PR-number>` that pre-reviews a PR before the engineer opens it, producing a structured layered output: fast triage first, optional deep review on demand. Fully terminal-based, no external services.
+A manual skill `/review-prep <PR>` that pre-reviews a PR before the engineer opens it, producing a structured layered output: fast triage first, optional deep review on demand. Fully terminal-based, no external services. The `<PR>` argument accepts either a PR number (e.g. `56700`) or a full GitHub PR URL (e.g. `https://github.com/camunda/camunda/pull/56700`).
 
 ## Scope
 
@@ -22,7 +22,7 @@ A manual skill `/review-prep <PR-number>` that pre-reviews a PR before the engin
 
 ### Phase 1 — Fast triage
 
-**Input:** PR number  
+**Input:** PR number or full GitHub PR URL — both are accepted and resolved to the same PR  
 **Model:** Sonnet (not Haiku — triage logic requires recognizing Zeebe-specific risk patterns)  
 **What it reads:** PR title, description, changed file list (no diff content)  
 **Framework:** Applies the existing `review-triage` skill logic

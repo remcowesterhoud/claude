@@ -35,12 +35,13 @@ Then, using only the PR metadata and changed-file list already fetched (no addit
 
 ```
 === Panel reviewer recommendation ===
-✓  reviewer-correctness  — <one-line reason it applies, or "general correctness">
-✓  reviewer-compat       — <one-line reason it applies, e.g. "touches persisted state / record types">
-✓  reviewer-security     — <one-line reason it applies, e.g. "touches auth / input validation">
+✓  Correctness               — <one-line reason it applies, or "general correctness">
+✓  Backwards compatibility   — <one-line reason it applies, e.g. "touches persisted state / record types">
+✓  Security                  — <one-line reason it applies, e.g. "touches auth / input validation">
+✓  Test coverage & completeness — <one-line reason it applies, or "general coverage check">
 ```
 
-Mark any reviewer with `✗  SKIP` (instead of `✓`) if it clearly does not apply, and give a one-line reason (e.g. "docs-only, no persisted state"). Never skip silently. Apply the same compat skip rule as the review-panel skill: skip `reviewer-compat` only when the diff clearly cannot touch persisted state, record/protocol schemas, public APIs, or replay behavior. Skip `reviewer-security` only when the diff clearly cannot touch auth, authorization, input validation, secrets, or deserialization. When in doubt, keep the reviewer.
+Mark any area with `✗  N/A` (instead of `✓`) if it clearly does not apply, and give a one-line reason (e.g. "docs-only, no persisted state"). Never mark N/A silently. Apply the same rule the `reviewer-comprehensive` agent uses: mark backwards compatibility N/A only when the diff clearly cannot touch persisted state, record/protocol schemas, public APIs, or replay behavior. Mark security N/A only when the diff clearly cannot touch auth, authorization, input validation, secrets, or deserialization. Mark test coverage N/A only when the diff cannot plausibly need test changes (docs-only, pure config, generated code). When in doubt, keep the area.
 
 Then STOP and ask the user, waiting for a reply before doing anything else:
 

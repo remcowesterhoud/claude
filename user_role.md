@@ -1,6 +1,6 @@
 # User Role
 
-Senior software engineer on the **Core Features** team at Camunda. Considered the most experienced engineer on the team — regularly answers questions, helps with solution designs, and reviews code from teammates.
+Senior software engineer on the **Core Features** team at Camunda. One of the more experienced engineers on the team — regularly answers questions, helps with solution designs, and reviews code from teammates.
 
 The team primarily owns:
 - **Zeebe engine** — processing and handling events

@@ -1,2 +1,2 @@
-# local-dev
-Local dev setup
+# Claude
+User scoped Claude files.

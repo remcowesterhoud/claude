@@ -1,6 +1,8 @@
 ---
 name: daily-update
 description: Use when generating Remco's daily standup update for Slack. Fetches yesterday's Outlook meetings, Slack incident/support involvement, and GitHub PRs (authored + reviewed), and posts the update as a draft reply in today's team-core-features-bravo standup thread.
+model: claude-sonnet-5
+effort: max
 ---
 
 # Daily Standup Update

@@ -93,13 +93,16 @@ April 26. Liberation Day (May 5) is only a day off every 5 years — include it 
 
 ## Step 2 — Ask "How do you feel today?"
 
-Ask the user the following question in plain conversational style (no preset options — accept any
-free-text answer):
+Use the `AskUserQuestion` tool for this — Remco prefers the interactive prompt over plain
+conversational text for every question in this skill, including open-ended ones. Offer 3-4
+plausible mood options (vary them each run — e.g. `Good`, `Tired`, `Stressed`, `Great`, `Meh`);
+the tool's built-in "Other" choice always lets Remco type an exact free-text answer instead, so
+this still captures any mood, not just the ones offered.
 
 > How do you feel today?
 
-Capture their response verbatim. The enhancement happens later in Step 7 once the workspace's
-custom emoji list has been fetched in Step 4g.
+Capture their response verbatim (whichever option or free-text they gave). The enhancement
+happens later in Step 7 once the workspace's custom emoji list has been fetched in Step 4g.
 
 ---
 
@@ -368,11 +371,16 @@ short conversational format, e.g.:
 >
 > If a section has no items, say so explicitly.
 
-**Then ask:**
+**Then ask (via `AskUserQuestion`, see combined call below):**
 
 1. > Does yesterday's section look correct? Anything to add, remove, or reclassify?
+>
+> Suggested options: `Looks good, no changes` (Recommended), `Needs changes`.
 
-Apply any corrections before continuing. Treat answers literally:
+Apply any corrections before continuing. Treat answers literally — whether given by picking
+`Needs changes` and then specifying details, or by going straight to `Other` with the correction
+typed out directly (both are valid; don't make Remco pick a generic option first if he's already
+typed the specific edit):
 - "Add X to medic duties" → add X as a sub-bullet under the medic duties line in the accomplished section.
 - "Remove X" → remove that bullet entirely.
 - "Mark X as in progress" → change its status emoji to `:loading:`.
@@ -392,24 +400,31 @@ format, e.g.:
 >
 > If a section has no items, say so explicitly (e.g. "No meetings on the calendar today.").
 
-**Then ask:**
+**Then ask (via `AskUserQuestion`, see combined call below):**
 
 2. > Any additional goals to add to today?
+>
+> Suggested options: `No additional goals` (Recommended), `Add goals`.
 
 Append additional goals as bullets at the end of the today section. If the answer is "no",
 "nothing", "nope", or empty, skip that addition.
 
 ### 6c. Ask about missed incident channels
 
-**Ask one final question:**
+**Ask one final question (via `AskUserQuestion`, see combined call below):**
 
 3. > Were you involved in any incident channels (#inc-support-*, #inc-*, #cve-*) yesterday that didn't show up in the accomplished section?
+>
+> Suggested options: `No incidents missed` (Recommended), `Yes, missed one`.
 
 For any incident channels named, add them as sub-bullets under the medic duties line in the
 accomplished-yesterday section (or as standalone top-level bullets if there was no medic duties
 goal). If the answer is "no", skip.
 
-All three questions may be asked together in a single AskUserQuestion call.
+**All three questions must be asked together in a single `AskUserQuestion` call** (it supports up
+to 4 questions at once) — never fall back to plain conversational text for these, even though
+the answers are open-ended. The tool's per-question "Other" option always accepts free-text, so
+open-endedness is not a reason to skip it.
 
 ---
 
@@ -579,3 +594,4 @@ Reply with the message link returned by `slack_send_message`.
 | Using `after:DATE before:DATE` for same-day Slack search | Those modifiers are mutually exclusive — use `on:DATE` instead. The combined form returns messages from surrounding days and silently misses the target date entirely. |
 | Using `gh search prs --reviewed-by=@me` to find yesterday's reviews | That returns all open PRs you've ever reviewed, not ones reviewed on a specific date. Use the GraphQL `contributionsCollection` query in Step 4d instead. |
 | Missing closed issues in the accomplished section | `gh search prs --created=DATE` only finds PRs authored that day; closed issues are invisible to it. Closed issues appear in Glean `user_activity` or in the yesterday standup post — check those sources and ask the user in Step 6a if uncertain. |
+| Asking Step 2 or Step 6 questions in plain conversational text | Remco prefers the `AskUserQuestion` interactive prompt for every question in this skill, even open-ended ones — the tool's built-in "Other" choice covers free-text answers, so open-endedness is never a reason to fall back to plain text. |

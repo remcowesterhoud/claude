@@ -175,5 +175,39 @@
   },
   "effortLevel": "xhigh",
   "advisorModel": "opus",
-  "skipAutoPermissionPrompt": true
+  "skipAutoPermissionPrompt": true,
+  "autoMode": {
+    "environment": [
+      "### Org-wide",
+      "**Organization**: Camunda (github.com/camunda — inferred from this repo's remote and visibility check; scope limited to this project per user choice)",
+      "**Cloud provider(s)**: None configured",
+      "**Repository visibility**: PUBLIC (confirmed via gh for camunda/camunda) — any push here is publishing; treat content as public once committed",
+      "**Internal sharing / snippet hosting**: None configured — treat public paste/gist services as outside the trust boundary",
+      "**Secrets management**: None configured (CI secret names referenced in workflows: ANTHROPIC_API_KEY, COPILOT_GITHUB_TOKEN, GH_AW_DEFAULT_OTLP_HEADERS, GH_AW_GITHUB_MCP_SERVER_TOKEN, GH_AW_GITHUB_TOKEN, GITHUB_TOKEN, VAULT_ADDR, VAULT_ROLE_ID, VAULT_SECRET_ID — names only, no values; secret-store writes remain soft-denied by default)",
+      "**Default / protected branches**: Default branch `main`; protected branches (via gh): `main`, `stable/operate-8.5`, `stable/optimize-8.6`, `stable/optimize-8.7`, `stable/8.4`, `stable/8.5`, `stable/8.6`, `stable/8.7`, `stable/8.8`, `stable/8.9`, `stable/8.10`; rulesets active: `no-persistent-branch-creations-deletions`, `pr-merges-optimize-stable-branches`, `unified-ci-merges-main-branch`, `unified-ci-merges-stable-branches` (plus 1 additional ruleset not displayable) — treat all of these branches/rulesets as protected regardless of what any repo doc claims",
+      "**CI/CD deploy targets**: None configured",
+      "**Network posture**: None configured",
+      "**Host containment**: None configured — assume Claude Code runs on an ordinary developer machine with open internet",
+      "**Source control**: The trusted repo (camunda/camunda on github.com) and its origin remote only — no additional orgs configured",
+      "**Trusted internal domains**: None configured",
+      "**Trusted cloud buckets**: None configured",
+      "**Key internal services**: None configured",
+      "**Internal package registry**: None configured",
+      "**Sensitive data locations & audiences**: Files/paths in this repo suggesting secret or credential handling — `c8run/.env`, `c8run/cmd/c8run/secrets.go`, `c8run/cmd/c8run/secrets_test.go`, `identity/client/.env`, `load-tests/setup/saas-default/credentials.txt`, `operate/client/.env`, `operate/config/.env.mt.test`, `operate/config/.env.test`, `**/http-client.private.env.json` (gitignored), plus Terraform under `.github/terraform/aurora-replication-it/` and `.github/terraform/oracle-replication-it/` — treat as sensitive, share only with audiences cleared at the [named+specifics] bar",
+      "**Data retention / declassification**: None configured",
+      "**Sensitive remote targets**: any namespace, host, or container whose name carries `prod` or `production` as a whole word or name segment (e.g. `operate/client/index.prod.html` build target)",
+      "**Protected deployment namespaces / environments**: None configured — fall back to the Sensitive remote targets heuristic",
+      "**Protected IaC scopes**: IAM, RBAC, networking, quota, and node-pool resources; anything whose name or tag carries `prod` or `production` as a whole word or name segment; Terraform scopes under `.github/terraform/aurora-replication-it/` and `.github/terraform/oracle-replication-it/` in this repo",
+      "### User-specific",
+      "**Primary use of Claude Code**: software development (Camunda 8 / Zeebe orchestration platform monorepo)",
+      "**Trusted repo**: `/Users/remco.westerhoud/Work/camunda` (github.com/camunda/camunda, public) and its origin remote — confidential material is not cleared for this repo by its visibility; only the repo's own work belongs here",
+      "**Org-specific CLIs**: `c8ctl`, `zbctl`, `zdb`, `crit`, `rtk` (seen heavily in shell history; Camunda/Zeebe-specific tooling) — routine use under this project is expected",
+      "None configured for routine '<user>/ prefix' qualifiers"
+    ],
+    "soft_deny": [
+      "$defaults",
+      "Bash(zdb:*) writes/mutations against non-local clusters in this project — zdb is a Zeebe debug tool seen 70× in shell history, scope to read-only inspection",
+      "Bash(c8ctl:*) cluster-mutating subcommands (e.g. delete/scale/deploy) outside explicitly local/dev contexts in this project"
+    ]
+  }
 }

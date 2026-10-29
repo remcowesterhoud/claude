@@ -27,3 +27,8 @@
 /plugins/
 /ide/
 .DS_Store
+
+# Tool-managed skill dirs (Superset plugin, claude.ai synced skills, deletion trash)
+/skills/.trash/
+/skills/superset/
+/skills/synced/

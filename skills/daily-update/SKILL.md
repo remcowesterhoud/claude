@@ -148,14 +148,32 @@ Glean's Outlook index does not reliably return calendar entries.
 Apply these filters in order:
 
 1. **Medic detection (runs first, overrides meeting list):** If any event title contains
-   `Zeebe Medic Schedule` (case-insensitive), set `was_medic_yesterday = true` and remove the
+   `Core Features Medic` (case-insensitive), set `was_medic_yesterday = true` and remove the
    event from the meeting list. It becomes its own top-level bullet `- Medic duties` in the
    rendered output — it is never nested under Meetings.
 
-   **Fallback:** The `Zeebe Medic Schedule` event is an all-day event and may not be returned by
-   the calendar query. If it is absent, check yesterday's standup thread (Step 4e) — if the
-   "What are your goals for today?" section contains a `Medic duties` bullet, set
-   `was_medic_yesterday = true` as well.
+   **Where the event lives:** The medic shift is a multi-day, non-all-day OpsGenie event titled
+   `<name> (user) is on call for schedule: Core Features Medic.`. It lives in Remco's separate
+   **OpsGenie** calendar, not the default one, so the default-calendar query never sees it. Run an
+   extra call: `outlook_calendar_search` with `calendarName: "OpsGenie"`, `query: "*"`, and a
+   window covering yesterday and today. Because the event spans several days, treat it as
+   matching a given day when its start/end range **overlaps** that day (not only when it starts
+   on it).
+
+   **Do not conflate with the separate "Core Features - Oncall" schedule:** the same OpsGenie
+   calendar also carries a distinct event titled `<name> (user) is on call for schedule: Core
+   Features - Oncall.`. This is a different rotation from medic duty — being on this schedule does
+   **not** mean Remco was medic that day. Only an event whose schedule name is literally
+   `Core Features Medic` sets `was_medic_yesterday` / `is_medic_today`. If only the `- Oncall`
+   schedule overlaps the day, treat it as no medic signal at all (don't render a `Medic duties`
+   bullet) — the day's incident/CVE/support channel activity still gets reported, just as ordinary
+   top-level Slack channel bullets under Step 4b, not nested under `Medic duties`. Confirmed
+   2026-10-27: Remco was on the `Core Features - Oncall` schedule but explicitly said "on-call is
+   not medic" when this skill nested that day's CVE channels under a `Medic duties` bullet.
+
+   **Fallback:** If the OpsGenie query returns nothing, check yesterday's standup thread
+   (Step 4e) — if the "What are your goals for today?" section contains a `Medic duties` bullet,
+   set `was_medic_yesterday = true` as well.
 
 2. **Exclusion list:** Drop any event whose title is a case-insensitive substring match against
    the exclusion list above (e.g. `Lunchtime blocker`).
@@ -321,11 +339,12 @@ Same approach as 4a but with today's date. Use `mcp__claude_ai_Microsoft_365__ou
 as the primary source, with `mcp__claude_ai_Glean__user_activity` as fallback. Apply the same
 filter chain (medic detection → exclusion list → accepted/non-cancelled/non-all-day).
 
-Set `is_medic_today = true` if a `Zeebe Medic Schedule` event is found today.
-
-**Important:** `is_medic_today` is determined solely from today's calendar. It is **never**
-inherited from `was_medic_yesterday` — medic is a 1-day shift, so being on rotation yesterday
-says nothing about today.
+Set `is_medic_today = true` if the OpsGenie-calendar `Core Features Medic` event (see Step 4a,
+`calendarName: "OpsGenie"`) overlaps today. The shift spans multiple days (e.g. Fri 00:00 to
+the following Mon 08:00), so being medic yesterday usually means medic today too — but always
+decide from the event's start/end range, not from `was_medic_yesterday`. As in Step 4a: the
+`Core Features - Oncall` schedule is a different rotation and never sets `is_medic_today` on its
+own, no matter how long it overlaps today.
 
 ### 5b. My open PRs needing my attention
 
@@ -340,11 +359,43 @@ For each PR where `reviewDecision == "CHANGES_REQUESTED"`, suggest the goal:
 
 ### 5c. PRs assigned to me to review
 
+`--review-requested=@me` returns PRs where Remco was requested either directly (as a person) or
+only because a team he belongs to (e.g. "C8 API team") was requested. Only a **direct personal**
+request reflects something Remco actually chose or was asked to do by name — a team-request is
+satisfied by anyone on the team and should not inflate his personal goal list. Per Remco's
+explicit instruction, **team-only review requests are excluded from the scaffold by default** and
+are never listed until he explicitly asks for them.
+
+Fetch with reviewer types so direct vs. team requests can be told apart:
+
 ```bash
-gh search prs --review-requested=@me --state=open --repo camunda/camunda --json number,title,url
+gh api graphql -f query='
+{
+  search(query: "is:pr review-requested:remcowesterhoud state:open repo:camunda/camunda", type: ISSUE, first: 30) {
+    nodes {
+      ... on PullRequest {
+        number
+        title
+        url
+        reviewRequests(first: 10) {
+          nodes {
+            requestedReviewer {
+              __typename
+              ... on User { login }
+            }
+          }
+        }
+      }
+    }
+  }
+}'
 ```
 
-For each result, suggest the goal:
+Keep only PRs whose `reviewRequests.nodes` contains a `User` with `login == "remcowesterhoud"`.
+Drop every other PR from this fetch entirely — do not mention team-only requests even as
+"additional context" in the preview.
+
+For each surviving (directly-requested) result, suggest the goal:
 `Review #NNNN — <title>`
 
 ### 5d. Medic carry-over
@@ -364,7 +415,7 @@ short conversational format, e.g.:
 
 > Here's what I have for yesterday (YYYY-MM-DD):
 >
-> - ✅ Medic duties  *(if was_medic_yesterday, with incident channel sub-bullets)*
+> - ✅ Medic duties  *(if was_medic_yesterday — standalone, no sub-bullets; incident/CVE channels render as their own top-level bullets)*
 > - ✅ Meetings: <comma-separated meeting titles>
 > - ✅ / 🔄 / ❌ <goal with classification>
 > - <unplanned activity if any>
@@ -417,9 +468,10 @@ Append additional goals as bullets at the end of the today section. If the answe
 >
 > Suggested options: `No incidents missed` (Recommended), `Yes, missed one`.
 
-For any incident channels named, add them as sub-bullets under the medic duties line in the
-accomplished-yesterday section (or as standalone top-level bullets if there was no medic duties
-goal). If the answer is "no", skip.
+For any incident channels named, add them as standalone top-level bullets in the
+accomplished-yesterday section — never nested under the medic duties line, which always stands
+alone with no sub-bullets (Remco has corrected this twice before, for CVE channels and for
+support/incident channels). If the answer is "no", skip.
 
 **All three questions must be asked together in a single `AskUserQuestion` call** (it supports up
 to 4 questions at once) — never fall back to plain conversational text for these, even though
@@ -567,7 +619,8 @@ Reply with the message link returned by `slack_send_message`.
 
 | Mistake | Fix |
 |---------|-----|
-| Including the `Zeebe Medic Schedule` event inside the Meetings block | Medic events must only appear as `- Medic duties`, never nested under Meetings |
+| Including the `Core Features Medic` event inside the Meetings block | Medic events must only appear as `- Medic duties`, never nested under Meetings |
+| Treating the `Core Features - Oncall` OpsGenie schedule as medic duty | It's a separate rotation from `Core Features Medic` — being on it never sets `was_medic_yesterday`/`is_medic_today`; that day's incident/CVE channels render as ordinary top-level Slack bullets instead |
 | Listing draft PRs under authored | Exclude `isDraft == true` from the authored list |
 | Rendering review-PR bullets as ❌ when there's no evidence Remco reviewed them | Omit the review entirely. If Remco didn't plan it and didn't do it, it's not relevant noise. Only render ❌ for goals he actively chose, not scaffold leftovers from yesterday's "PRs assigned to me" list. See Step 4f's "Review-item handling (special case)". |
 | Skipping the standup fetch in Step 4e | The "accomplished yesterday" section is supposed to mirror yesterday's stated goals with status emojis — without 4e there's no goal list to compare against |
@@ -576,6 +629,7 @@ Reply with the message link returned by `slack_send_message`.
 | Using plain `#channel-name` text for Slack channels | Plain `#name` does not link when sent via the API. Always use `<#CHANNEL_ID|channel-name>` — pull both the ID and full name from Slack search metadata (Step 4b) or yesterday's standup thread (Step 4e) |
 | Rendering PRs with no title or no URL | Always include both using Slack hyperlink syntax: `<https://github.com/.../pull/NNNN|title>` — the title tells readers what it is, the URL makes it clickable |
 | Using `gh search prs ... --json reviewDecision` | `gh search prs` does not expose `reviewDecision`; use `gh pr list` for that query (Step 5b) |
+| Listing team-only review requests (e.g. "C8 API team") as personal "Review #NNNN" goals | Only PRs where Remco is a directly-requested `User` reviewer count — team-only requests are excluded by default until he explicitly asks for them (Step 5c) |
 | Asking for additional goals without previewing the scaffolded ones | Step 6 requires printing the scaffolded today's goals to chat first so the user can decide what to add |
 | Printing an empty `- Meetings` header | Skip the entire block when the meeting list is empty after filtering |
 | Stripping all personality from the "feel" answer | Keep the user's core sentiment but enhance it with fitting emoji and an optional fun line — see Step 2 |

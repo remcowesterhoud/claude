@@ -37,7 +37,7 @@ If any is missing, run an `Explore` subagent first and embed its findings verbat
 
 Give the executor the FULL plan as its prompt — it starts cold with none of our conversation context. Include file paths, what to change, what to verify, and the Explore findings. Reference specific files and line numbers where it helps.
 
-You no longer need to repeat frugality, advisor-suppression, or Maven-filtering instructions in the dispatch prompt — the executor inherits `~/.claude/user_guardrails.md` and `user_maven_output.md` via CLAUDE.md, and its own agent definition already suppresses `advisor()`. Just give the plan.
+You no longer need to repeat frugality, advisor-suppression, or build-tool (Gradle-first) instructions in the dispatch prompt — the executor inherits `~/.claude/user_guardrails.md` and `user_build_tool.md` via CLAUDE.md, and its own agent definition already suppresses `advisor()`. Just give the plan.
 
 ## Model assignments
 

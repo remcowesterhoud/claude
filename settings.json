@@ -6,7 +6,7 @@
       "mcp__claude_ai_Glean__read_document"
     ]
   },
-  "model": "sonnet",
+  "model": "opus",
   "hooks": {
     "PreToolUse": [
       {
@@ -173,6 +173,7 @@
       }
     }
   },
+  "effortLevel": "xhigh",
   "advisorModel": "opus",
   "skipAutoPermissionPrompt": true
 }

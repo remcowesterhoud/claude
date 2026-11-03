@@ -13,9 +13,23 @@ This skill generates Remco Westerhoud's (remco.westerhoud@camunda.com, GitHub: r
 daily standup update for the team Slack channel. It resolves the correct "yesterday" window
 (skipping weekends, Dutch public holidays, and PTO days), fetches data from Outlook, Slack, and
 GitHub, prompts for today's goals, and posts the update as a draft reply in today's standup thread
-in #team-core-features-bravo.
+in #team-core-features-bravo. The skill is self-learning: it tracks the user's corrections, keeps up
+to 5 example reports and lessons in `~/.claude/daily-update-state/`, and evaluates every run
+(protocol in `learning.md` next to this file).
 
 **Owner:** remco.westerhoud@camunda.com
+
+---
+
+## Step 0 — Load Learning State
+
+Read `~/.claude/skills/daily-update/learning.md` (the protocol) and the state files in
+`~/.claude/daily-update-state/` (`runs.json`, `lessons.md`, `examples/`). Bootstrap any missing
+file as described in `learning.md`. The state dir is deliberately outside git (it contains Slack
+channel names, PR titles and meeting names).
+
+Hold `lessons`, `examples` and `size_budget` in mind silently — do not print them. Initialize the
+correction ledger: `corrections = []`, `clarifications = 0`, `added_goals = 0`.
 
 ---
 
@@ -314,7 +328,8 @@ For each goal extracted in 4e, classify based on the activity data collected in 
 - Anything else → mark as **uncertain** and surface to the user for confirmation.
 
 **Always surface uncertain classifications to the user** using AskUserQuestion with Done /
-In progress / Not done options. Do not silently guess. Apply the user's answer before rendering.
+In progress / Not done options. Do not silently guess. Apply the user's answer before rendering,
+then increment `clarifications` (not a correction — see `learning.md`).
 
 **Review-item handling (special case):** Review-PR bullets that appeared in yesterday's standup
 are often auto-scaffolded leftovers rather than genuine plans. When a review bullet would land as
@@ -438,6 +453,9 @@ typed the specific edit):
 - "Mark X as in progress" → change its status emoji to `:loading:`.
 - "No" / "looks good" → proceed as-is.
 
+Each edit the user makes (reclassify / add / remove / reword) → append one entry to `corrections`
+(`step: 6a`).
+
 ### 6b. Preview today's goals
 
 **Then print the scaffolded today's goals to the user in chat.** Use a short conversational
@@ -459,7 +477,8 @@ format, e.g.:
 > Suggested options: `No additional goals` (Recommended), `Add goals`.
 
 Append additional goals as bullets at the end of the today section. If the answer is "no",
-"nothing", "nope", or empty, skip that addition.
+"nothing", "nope", or empty, skip that addition. Count each goal the user adds in `added_goals`
+(informational, not a correction).
 
 ### 6c. Ask about missed incident channels
 
@@ -472,7 +491,8 @@ Append additional goals as bullets at the end of the today section. If the answe
 For any incident channels named, add them as standalone top-level bullets in the
 accomplished-yesterday section — never nested under the medic duties line, which always stands
 alone with no sub-bullets (Remco has corrected this twice before, for CVE channels and for
-support/incident channels). If the answer is "no", skip.
+support/incident channels). If the answer is "no", skip. Each missed incident channel the user
+names → append one entry to `corrections` (`step: 6c`, `kind: add`).
 
 **All three questions must be asked together in a single `AskUserQuestion` call** (it supports up
 to 4 questions at once) — never fall back to plain conversational text for these, even though
@@ -492,6 +512,15 @@ Step 8 — do **not** wrap it in a fenced code block. Use these formatting conve
 
 ### Rendering rules
 
+- **Apply learning:** before assembling, compare the draft with the non-provisional examples and
+  the lessons from Step 0 (structure, wording, fan-out rendering, length) and adjust. Explicit
+  rules in this file win on conflict; report the conflict in Step 9.
+- **Size guard:** after assembling, count non-empty lines and characters against `size_budget`.
+  If over budget, shrink in this order and never drop goal bullets or their status emoji:
+  (1) drop empty headers/blocks; (2) collapse any fan-out of more than 6 items to the first 5
+  plus `and N more`; (3) collapse meeting lists of more than 6 the same way; (4) shorten the
+  "How do you feel today?" enhancement to one sentence. If still over budget, say so in the 8b
+  preview.
 - **"How do you feel today?" enhancement:** Take the raw feel answer from Step 2 and spice it up
   before inserting it into the message. Keep the core sentiment and wording intact, but enhance
   it with:
@@ -594,10 +623,12 @@ Run both in a **single parallel message**:
 ### 8b. Show message in chat for review
 
 Print the fully assembled message to the user in the chat (inside a fenced code block so
-formatting is visible), then ask: "Ready to send, or any changes needed?"
+formatting is visible), then add a one-line size note under it
+(`N lines, M chars — budget X/Y`) and ask: "Ready to send, or any changes needed?"
 
 Wait for the user's go-ahead before proceeding. If they request changes, apply them and show
-the updated message again before asking once more.
+the updated message again before asking once more. Each distinct edit the user requests → append
+one entry to `corrections` (`step: 8b`); if they ask for it to be shorter use `kind: size`.
 
 ### 8c. Send directly to the thread
 
@@ -613,6 +644,16 @@ If no thread was found yet (bot hasn't posted it yet):
 ### 8d. Confirm to the user
 
 Reply with the message link returned by `slack_send_message`.
+
+---
+
+## Step 9 — Evaluate the Run and Learn
+
+Runs after the message is sent (or the user aborts). Follow section "End-of-run evaluation" in
+`learning.md` (9a–9e): measure the final message, evaluate it against the examples and lessons,
+update the examples, `lessons.md` and `runs.json` in `~/.claude/daily-update-state/`, propose a
+`SKILL.md` edit only when the same correction repeats across runs (and only apply it with the
+user's approval), then print a summary of at most 5 lines.
 
 ---
 
@@ -650,3 +691,6 @@ Reply with the message link returned by `slack_send_message`.
 | Using `gh search prs --reviewed-by=@me` to find yesterday's reviews | That returns all open PRs you've ever reviewed, not ones reviewed on a specific date. Use the GraphQL `contributionsCollection` query in Step 4d instead. |
 | Missing closed issues in the accomplished section | `gh search prs --created=DATE` only finds PRs authored that day; closed issues are invisible to it. Closed issues appear in Glean `user_activity` or in the yesterday standup post — check those sources and ask the user in Step 6a if uncertain. |
 | Asking Step 2 or Step 6 questions in plain conversational text | Remco prefers the `AskUserQuestion` interactive prompt for every question in this skill, even open-ended ones — the tool's built-in "Other" choice covers free-text answers, so open-endedness is never a reason to fall back to plain text. |
+| Skipping Step 0 or Step 9 | Learning never accumulates. Always load the state first (Step 0) and always record the run (Step 9), even if the user aborted. |
+| Counting 6b added goals or 4f clarifications as corrections | They are logged separately (`added_goals`, `clarifications`) and not scored — only changes to the skill's draft count toward `change_count`. |
+| Storing learning state inside the skill directory or git | Slack channel names, PR titles and meeting names would be committed. Keep it in `~/.claude/daily-update-state/`. |

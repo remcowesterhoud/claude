@@ -212,7 +212,7 @@ The following channel names are excluded from output (case-insensitive exact mat
 Edit this list in the SKILL.md to add more entries over time:
 
 ```
-support-sparring-zeebe
+support-sparring-core-features
 ```
 
 For each result across both passes, extract the channel name from the message metadata.
@@ -222,6 +222,7 @@ Keep only channels whose names match one of these prefixes (case-insensitive):
 - `prj-`
 - `inc-support-`
 - `support-`
+- `top-`
 
 Then drop any channel that matches the exclusion list above.
 

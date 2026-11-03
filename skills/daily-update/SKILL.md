@@ -414,6 +414,16 @@ Drop every other PR from this fetch entirely — do not mention team-only reques
 For each surviving (directly-requested) result, suggest the goal:
 `Review #NNNN — <title>`
 
+### 5c-bis. Reviews already submitted today
+
+Remco often reviews in the morning, before this skill runs. Any PR he already reviewed **today**
+belongs in today's goals as completed work. Fetch with the same GraphQL contributions query as
+Step 4d, using today's date (`from: "<today>T00:00:00Z"`, `to: "<today>T23:59:59Z"`), and
+deduplicate by PR number. Also scan Glean `user_activity` for today (Step 5a's fallback call) for
+reviews in other repos. Render each as `- :white_check_mark: Review #NNNN — <url|title>` in
+today's section, and drop any pending `Review #NNNN` goal for the same PR. If a PR Remco explicitly
+reassigned to someone else (he says so in the preview), drop it entirely.
+
 ### 5d. Medic carry-over
 
 If `is_medic_today == true`, include `- Medic duties` as the first bullet under today's section

@@ -417,12 +417,17 @@ For each surviving (directly-requested) result, suggest the goal:
 ### 5c-bis. Reviews already submitted today
 
 Remco often reviews in the morning, before this skill runs. Any PR he already reviewed **today**
-belongs in today's goals as completed work. Fetch with the same GraphQL contributions query as
+belongs in today's goals. Fetch with the same GraphQL contributions query as
 Step 4d, using today's date (`from: "<today>T00:00:00Z"`, `to: "<today>T23:59:59Z"`), and
 deduplicate by PR number. Also scan Glean `user_activity` for today (Step 5a's fallback call) for
-reviews in other repos. Render each as `- :white_check_mark: Review #NNNN — <url|title>` in
+reviews in other repos. Render each as a plain `- Review #NNNN — <url|title>` in
 today's section, and drop any pending `Review #NNNN` goal for the same PR. If a PR Remco explicitly
-reassigned to someone else (he says so in the preview), drop it entirely.
+reassigned to someone else (he says so in the preview), drop it entirely. **Never put a status
+emoji (`:white_check_mark:`, `:loading:`, `:x:`) anywhere in today's section**, not even for work
+already done: today's section is what Remco will do today, and tomorrow's run judges it. Also scaffold,
+as plain bullets, PRs Remco authored today (`gh search prs --author=@me --created=<today>`, non-draft;
+his own PR shows up in the contributions query too, but it is not a review) and issues he closed today
+(`gh search issues --assignee=@me --closed=<today>`, or check Glean `user_activity`).
 
 ### 5d. Medic carry-over
 
@@ -535,8 +540,9 @@ Step 8 — do **not** wrap it in a fenced code block. Use these formatting conve
   before inserting it into the message. Keep the core sentiment and wording intact, but enhance
   it with:
   - One or two fitting emoji — **prefer custom workspace emoji from `custom_emoji_list`** (Step 4g)
-    over standard Unicode emoji when a good match exists (e.g. `:bravo-team:`, `:thinking-foot:`,
-    `:loading:`, `:crab:`, or any mood-relevant custom emoji). Fall back to standard emoji
+    over standard Unicode emoji when a good match exists (e.g. `:thinking-foot:`, `:loading:`,
+    `:crab:`, or any mood-relevant custom emoji). **Never mention the team or use `:bravo-team:`**
+    (Remco called it excessive on 2026-11-05). Fall back to standard emoji
     (`:coffee:`, `:sleeping:`, `:muscle:`, `:rainbow:`, `:brain:`) only if no custom emoji fits.
     Pick based on the mood, not randomly.
   - Optionally: a short fun quote, a relatable observation, or a one-liner that matches the vibe —

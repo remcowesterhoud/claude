@@ -513,8 +513,20 @@ alone with no sub-bullets (Remco has corrected this twice before, for CVE channe
 support/incident channels). If the answer is "no", skip. Each missed incident channel the user
 names → append one entry to `corrections` (`step: 6c`, `kind: add`).
 
-**All three questions must be asked together in a single `AskUserQuestion` call** (it supports up
-to 4 questions at once) — never fall back to plain conversational text for these, even though
+### 6d. Ask about blockers
+
+**Always ask this question (Remco asked for it on 2026-11-11), via `AskUserQuestion`, see combined
+call below:**
+
+4. > Are you running into any blockers?
+>
+> Suggested options: `No blockers` (Recommended), `Yes, blocked`. The details go in "Other"
+> or in the option's notes.
+
+Use the answer for the blockers section (see Step 7). This is an input, not a correction.
+
+**All four questions must be asked together in a single `AskUserQuestion` call** (the tool's
+maximum is 4 questions per call) — never fall back to plain conversational text for these, even though
 the answers are open-ended. The tool's per-question "Other" option always accepts free-text, so
 open-endedness is not a reason to skip it.
 
@@ -570,8 +582,8 @@ Step 8 — do **not** wrap it in a fenced code block. Use these formatting conve
   there are no skipped-day bullets, emit a warning to the user before assembling:
   "No activity detected for <date>. Are you sure that was a working day?" — then still assemble
   the message with empty sections.
-- **Blockers:** Always emit `No` unless the user mentioned a blocker in conversation. If they did,
-  use their wording verbatim.
+- **Blockers:** Use the Step 6d answer. Emit `No` only if Remco answered `No blockers`. Otherwise
+  use his wording verbatim. Never default to `No` without asking.
 
 ### Exact template
 

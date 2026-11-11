@@ -487,13 +487,17 @@ format, e.g.:
 
 **Then ask (via `AskUserQuestion`, see combined call below):**
 
-2. > Any additional goals to add to today?
+2. > Anything to change in today's goals? Select all that apply and type the details in each
+>   selected option's notes.
 >
-> Suggested options: `No additional goals` (Recommended), `Add goals`.
+> Ask with `multiSelect: true` and exactly these options: `All good`, `Goals to remove`,
+> `Goals to add`. Remco cannot type into a plain single-select option (only "Other" takes text),
+> which made the old `Add goals` option useless (2026-11-11). The per-option notes let him type
+> removals and additions separately in one go.
 
-Append additional goals as bullets at the end of the today section. If the answer is "no",
-"nothing", "nope", or empty, skip that addition. Count each goal the user adds in `added_goals`
-(informational, not a correction).
+File each added goal under its project (Step 7 grouping). If only `All good` is picked, change
+nothing. Count each goal the user adds in `added_goals` (informational, not a correction); each
+removal of a scaffolded goal is a correction (`step: 6b`, `kind: remove`).
 
 ### 6c. Ask about missed incident channels
 
@@ -581,7 +585,19 @@ goal headline on the bullet line and each item on its own nested `  -` line. For
 single-item evidence, append the reference inline in parentheses instead.
 
 Activity that wasn't part of yesterday's stated goals but is still worth mentioning (e.g. an
-unplanned PR or meeting) goes underneath as plain bullets without a status emoji.
+unplanned PR or meeting) goes underneath as plain bullets without a status emoji. If it was
+clearly finished, give it `:white_check_mark:` anyway (Remco asked for this on 2026-11-11).
+
+**Group by project, in both sections (always — Remco asked for this on 2026-11-11):** after
+Meetings, put each project as a top-level bullet with no emoji (e.g. `- API Governance`,
+`- HTO`, `- Connection validation epic`). Nest that project's goals under it, with the status
+emoji on each nested goal line in the yesterday section. Items that belong to no project (meetings,
+personal errands like "order a keyboard") stay top-level. Work out the project as well as you can:
+walk the issue's parent chain
+(`gh api graphql` → `issue { parent { title parent { title } } }`; the title prefix, e.g.
+`[API Governance]` or `[HTO without rebuild]`, names the project). For PRs, use the linked issue.
+For Slack work, use the `prj-pdp-NNNN-*` channel or the thread's topic. Keep the project names
+the same between yesterday and today. Show the grouping in the 6a/6b previews too.
 
 ```
 **How do you feel today?**
@@ -592,22 +608,25 @@ unplanned PR or meeting) goes underneath as plain bullets without a status emoji
 - Public Holiday — Eerste Paasdag
 - PTO
 <"- Medic duties" if was_medic_yesterday == true>
-- :white_check_mark: <yesterday goal completed> (<optional context — #PR, channel, etc.>)
-- :loading: <yesterday goal in progress> (<optional context>)
-- :x: <yesterday goal not done>
-- :white_check_mark: <goal that fans out into multiple items>
-  - <https://github.com/camunda/camunda/pull/NNNN|title>
-  - <https://github.com/camunda/camunda/pull/NNNN|title>
-<additional unplanned activity, if notable:>
-- Extra meeting/PR/channel that wasn't a stated goal
+- :white_check_mark: Meetings
+  - <meeting title>
+- <Project A>
+  - :white_check_mark: <yesterday goal completed> (<optional context — #PR, channel, etc.>)
+  - :loading: <yesterday goal in progress> (<optional context>)
+  - <unplanned activity for this project, if notable>
+- <Project B>
+  - :x: <yesterday goal not done>
+- :white_check_mark: <goal with no project>
 
 **What are your goals for today?**
 <"- Medic duties" if is_medic_today == true>
 - Meetings
   - <meeting title>
-- Apply review feedback to #NNNN — <https://github.com/camunda/camunda/pull/NNNN|title>
-- Review #NNNN — <https://github.com/camunda/camunda/pull/NNNN|title>
-<user-supplied additional goals as bullets>
+- <Project A>
+  - Apply review feedback to #NNNN — <https://github.com/camunda/camunda/pull/NNNN|title>
+  - Review #NNNN — <https://github.com/camunda/camunda/pull/NNNN|title>
+  - <user-supplied goal for this project>
+- <goal with no project>
 
 **Are you running into any blockers?**
 No

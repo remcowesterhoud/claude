@@ -485,15 +485,21 @@ format, e.g.:
 >
 > If a section has no items, say so explicitly (e.g. "No meetings on the calendar today.").
 
-**Then ask (via `AskUserQuestion`, see combined call below):**
+**Then ask two separate single-select questions (via `AskUserQuestion`, see combined call below):**
 
-2. > Anything to change in today's goals? Select all that apply and type the details in each
->   selected option's notes.
+2. > Anything to add to today's goals?
 >
-> Ask with `multiSelect: true` and exactly these options: `All good`, `Goals to remove`,
-> `Goals to add`. Remco cannot type into a plain single-select option (only "Other" takes text),
-> which made the old `Add goals` option useless (2026-11-11). The per-option notes let him type
-> removals and additions separately in one go.
+> Options: `No` (Recommended), `Yes, I'll type them`. Details go in "Other".
+
+3. > Anything to remove from today's goals?
+>
+> Options: `No` (Recommended), `Yes, I'll type them`. Details go in "Other".
+
+Remco cannot type into a plain option or a multiSelect option's notes (only "Other" takes text,
+2026-11-11 and 2026-11-12), hence two questions instead of one multi-select. Also scaffold goals
+from his assigned open issues (`gh issue list --assignee=@me`) and open draft PRs
+(`gh pr list --author=@me`), carry-overs and linked issues, so he doesn't have to spoon-feed them;
+flag them as suggestions in the preview.
 
 File each added goal under its project (Step 7 grouping). If only `All good` is picked, change
 nothing. Count each goal the user adds in `added_goals` (informational, not a correction); each
@@ -503,7 +509,7 @@ removal of a scaffolded goal is a correction (`step: 6b`, `kind: remove`).
 
 **Ask one final question (via `AskUserQuestion`, see combined call below):**
 
-3. > Were you involved in any incident channels (#inc-support-*, #inc-*, #cve-*) yesterday that didn't show up in the accomplished section?
+4. > Were you involved in any incident channels (#inc-support-*, #inc-*, #cve-*) yesterday that didn't show up in the accomplished section?
 >
 > Suggested options: `No incidents missed` (Recommended), `Yes, missed one`.
 
@@ -518,15 +524,14 @@ names → append one entry to `corrections` (`step: 6c`, `kind: add`).
 **Always ask this question (Remco asked for it on 2026-11-11), via `AskUserQuestion`, see combined
 call below:**
 
-4. > Are you running into any blockers?
+5. > Are you running into any blockers?
 >
 > Suggested options: `No blockers` (Recommended), `Yes, blocked`. The details go in "Other"
 > or in the option's notes.
 
 Use the answer for the blockers section (see Step 7). This is an input, not a correction.
 
-**All four questions must be asked together in a single `AskUserQuestion` call** (the tool's
-maximum is 4 questions per call) — never fall back to plain conversational text for these, even though
+**All five questions are asked in two `AskUserQuestion` calls** (the tool's maximum is 4 per call: 6a + add + remove + incidents, then blockers; or any split) — never fall back to plain conversational text for these, even though
 the answers are open-ended. The tool's per-question "Other" option always accepts free-text, so
 open-endedness is not a reason to skip it.
 
